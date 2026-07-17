@@ -11,6 +11,8 @@ const stage = document.querySelector(".stage");
 
 let manifest = {};
 let currentAudio = null;
+let currentAudioReject = null;
+let playbackId = 0;
 let fallbackAudioContext = null;
 
 init();
@@ -57,7 +59,7 @@ async function loadManifest() {
       throw new Error(`Manifest request failed: ${response.status}`);
     }
     const data = await response.json();
-    return data.items || {};
+    return data || {};
   } catch (error) {
     console.info("Using default jingle paths until generated assets exist.", error);
     return {};
@@ -75,39 +77,104 @@ async function playJingle(key) {
   pulseButton(button);
   throwSparkles(button || stage);
 
+  const token = playbackId + 1;
+  playbackId = token;
   stopCurrentAudio();
 
-  const audioPath = manifest[key]?.src || `assets/jingles/${key}.mp3`;
-  let handledAudioError = false;
-  const useFallback = async () => {
-    if (handledAudioError) {
-      return;
-    }
-    handledAudioError = true;
-    stage.classList.remove("is-playing");
-    await playFallbackJingle(label);
-  };
+  const musicPath = manifest.music?.src || "assets/jingles/jingle.wav";
+  const voicePath = manifest.items?.[key]?.voiceSrc || `assets/jingles/voice/${key}.mp3`;
 
   try {
-    currentAudio = new Audio(audioPath);
-    currentAudio.preload = "auto";
-    currentAudio.addEventListener("ended", () => stage.classList.remove("is-playing"), { once: true });
-    currentAudio.addEventListener("error", () => void useFallback(), { once: true });
-    await currentAudio.play();
+    await playAudioFile(musicPath, token);
   } catch (error) {
-    console.info(`Falling back for ${label}; generated MP3 not playable yet.`, error);
-    await useFallback();
+    if (!isCurrentPlayback(token)) {
+      return;
+    }
+    console.info("Using built-in music fallback; shared jingle file is not playable yet.", error);
+    await playFallbackMusic();
+  }
+
+  if (!isCurrentPlayback(token)) {
+    return;
+  }
+
+  try {
+    await playAudioFile(voicePath, token);
+  } catch (error) {
+    if (!isCurrentPlayback(token)) {
+      return;
+    }
+    console.info(`Using speech fallback for ${label}; generated voice line is not playable yet.`, error);
+    await speakLabel(label);
+  }
+
+  if (isCurrentPlayback(token)) {
+    stage.classList.remove("is-playing");
   }
 }
 
 function stopCurrentAudio() {
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+
   if (!currentAudio) {
     return;
   }
 
+  const reject = currentAudioReject;
   currentAudio.pause();
   currentAudio.currentTime = 0;
   currentAudio = null;
+  currentAudioReject = null;
+  reject?.(new Error("Playback was stopped."));
+}
+
+function playAudioFile(src, token) {
+  return new Promise((resolve, reject) => {
+    if (!isCurrentPlayback(token)) {
+      reject(new Error("Playback was replaced."));
+      return;
+    }
+
+    const audio = new Audio(src);
+    currentAudio = audio;
+    currentAudioReject = reject;
+    audio.preload = "auto";
+    audio.addEventListener(
+      "ended",
+      () => {
+        if (currentAudio === audio) {
+          currentAudio = null;
+          currentAudioReject = null;
+        }
+        resolve();
+      },
+      { once: true },
+    );
+    audio.addEventListener(
+      "error",
+      () => {
+        if (currentAudio === audio) {
+          currentAudio = null;
+          currentAudioReject = null;
+        }
+        reject(new Error(`Unable to play ${src}`));
+      },
+      { once: true },
+    );
+    audio.play().catch((error) => {
+      if (currentAudio === audio) {
+        currentAudio = null;
+        currentAudioReject = null;
+      }
+      reject(error);
+    });
+  });
+}
+
+function isCurrentPlayback(token) {
+  return token === playbackId;
 }
 
 function pulseButton(button) {
@@ -137,19 +204,7 @@ function throwSparkles(anchor) {
   }
 }
 
-async function playFallbackJingle(label) {
-  if ("speechSynthesis" in window) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(`This is ${label}!`);
-    utterance.rate = 0.9;
-    utterance.pitch = 1.35;
-    window.speechSynthesis.speak(utterance);
-  }
-
-  await playFallbackNotes();
-}
-
-async function playFallbackNotes() {
+async function playFallbackMusic() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) {
     return;
@@ -163,19 +218,69 @@ async function playFallbackNotes() {
   }
 
   const now = fallbackAudioContext.currentTime;
-  const notes = [523.25, 659.25, 783.99, 1046.5];
-  notes.forEach((frequency, index) => {
+  const notes = [
+    { frequency: 523.25, start: 0, duration: 0.26 },
+    { frequency: 659.25, start: 0.18, duration: 0.28 },
+    { frequency: 783.99, start: 0.36, duration: 0.3 },
+    { frequency: 1046.5, start: 0.56, duration: 0.3 },
+    { frequency: 1318.51, start: 0.74, duration: 0.22 },
+  ];
+  notes.forEach(({ frequency, start, duration }) => {
     const oscillator = fallbackAudioContext.createOscillator();
     const gain = fallbackAudioContext.createGain();
-    oscillator.type = "triangle";
-    oscillator.frequency.setValueAtTime(frequency, now + index * 0.1);
-    gain.gain.setValueAtTime(0, now + index * 0.1);
-    gain.gain.linearRampToValueAtTime(0.12, now + index * 0.1 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.1 + 0.34);
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(frequency, now + start);
+    gain.gain.setValueAtTime(0, now + start);
+    gain.gain.linearRampToValueAtTime(0.12, now + start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + start + duration);
     oscillator.connect(gain).connect(fallbackAudioContext.destination);
-    oscillator.start(now + index * 0.1);
-    oscillator.stop(now + index * 0.1 + 0.35);
+    oscillator.start(now + start);
+    oscillator.stop(now + start + duration);
   });
+
+  await new Promise((resolve) => window.setTimeout(resolve, 1000));
+}
+
+function speakLabel(label) {
+  if (!("speechSynthesis" in window)) {
+    return Promise.resolve();
+  }
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(`This is ${label}.`);
+  utterance.rate = 0.92;
+  utterance.pitch = 1.12;
+  utterance.voice = chooseFallbackVoice();
+
+  return new Promise((resolve) => {
+    const timeout = window.setTimeout(resolve, 1800);
+    utterance.addEventListener(
+      "end",
+      () => {
+        window.clearTimeout(timeout);
+        resolve();
+      },
+      { once: true },
+    );
+    utterance.addEventListener(
+      "error",
+      () => {
+        window.clearTimeout(timeout);
+        resolve();
+      },
+      { once: true },
+    );
+    window.speechSynthesis.speak(utterance);
+  });
+}
+
+function chooseFallbackVoice() {
+  const voices = window.speechSynthesis.getVoices?.() || [];
+  return (
+    voices.find((voice) => /female|woman|samantha|victoria|zira|google uk english female/i.test(voice.name)) ||
+    voices.find((voice) => /^en[-_]/i.test(voice.lang)) ||
+    null
+  );
 }
 
 function describeKey(key) {
