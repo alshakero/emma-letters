@@ -23,7 +23,7 @@
 }
 
 body {
-  min-height: 100vh;
+  min-height: 100svh;
   margin: 0;
   color: var(--ink);
   overflow-x: hidden;
@@ -62,17 +62,20 @@ body::after {
 
 .game-shell {
   width: 100%;
-  min-height: 100vh;
-  padding: clamp(20px, 3vw, 44px);
+  height: 100svh;
+  min-height: 0;
+  padding: clamp(10px, 2vmin, 28px);
   display: grid;
-  gap: clamp(18px, 2.6vw, 32px);
+  overflow: hidden;
 }
 
 .hero {
+  min-height: 0;
+  height: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
+  grid-template-columns: minmax(0, 0.96fr) minmax(280px, 1.04fr);
   align-items: stretch;
-  gap: clamp(18px, 3vw, 34px);
+  gap: clamp(10px, 2vmin, 24px);
 }
 
 .hero-copy,
@@ -84,9 +87,9 @@ body::after {
 }
 
 .hero-copy {
-  min-height: 360px;
-  padding: clamp(24px, 4.6vw, 64px);
-  border-radius: 42px;
+  min-height: 0;
+  padding: clamp(14px, 3vmin, 36px);
+  border-radius: clamp(24px, 4vmin, 42px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -112,15 +115,15 @@ body::after {
 }
 
 .emma-card {
-  width: min(100%, 780px);
-  margin: 0 0 clamp(18px, 3vw, 34px);
-  padding: clamp(14px, 2.2vw, 26px);
+  width: min(100%, 560px);
+  margin: 0 0 clamp(10px, 2vmin, 24px);
+  padding: clamp(10px, 1.5vmin, 16px);
   border: 4px solid rgba(255, 255, 255, 0.84);
-  border-radius: 36px;
+  border-radius: clamp(24px, 4vmin, 36px);
   background: rgba(255, 255, 255, 0.72);
   box-shadow: 0 18px 44px rgba(35, 25, 66, 0.18);
   display: grid;
-  grid-template-columns: clamp(160px, 20vw, 280px) minmax(0, 1fr);
+  grid-template-columns: clamp(104px, 15vmin, 180px) minmax(0, 1fr);
   align-items: center;
   gap: clamp(14px, 2vw, 22px);
 }
@@ -137,7 +140,7 @@ body::after {
 
 .emma-name {
   margin: 0;
-  font-size: clamp(1.5rem, 3.8vw, 3.2rem);
+  font-size: clamp(1.3rem, 4.2vmin, 2.4rem);
   line-height: 0.95;
   font-weight: 1000;
   letter-spacing: -0.06em;
@@ -145,7 +148,7 @@ body::after {
 
 .emma-note {
   margin: 8px 0 0;
-  font-size: clamp(0.95rem, 1.7vw, 1.22rem);
+  font-size: clamp(0.85rem, 2.1vmin, 1.05rem);
   line-height: 1.25;
   font-weight: 900;
   color: rgba(35, 25, 66, 0.72);
@@ -153,22 +156,22 @@ body::after {
 
 .eyebrow {
   width: fit-content;
-  margin: 0 0 18px;
-  padding: 10px 16px;
+  margin: 0 0 clamp(8px, 1.4vmin, 14px);
+  padding: 8px 14px;
   border-radius: 999px;
   background: var(--ink);
   color: #fff;
-  font-size: clamp(0.86rem, 1.6vw, 1rem);
+  font-size: clamp(0.72rem, 1.7vmin, 0.9rem);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 h1 {
-  max-width: 10ch;
+  max-width: 12ch;
   margin: 0;
-  font-size: clamp(3.25rem, 10vw, 8.6rem);
-  line-height: 0.82;
+  font-size: clamp(2.4rem, 8.2vmin, 6rem);
+  line-height: 0.86;
   letter-spacing: -0.08em;
   text-wrap: balance;
   text-shadow: 0 8px 0 rgba(255, 255, 255, 0.56);
@@ -176,15 +179,15 @@ h1 {
 
 .lede {
   max-width: 56ch;
-  margin: 26px 0 0;
-  font-size: clamp(1.1rem, 2.2vw, 1.55rem);
+  margin: clamp(10px, 2vmin, 18px) 0 0;
+  font-size: clamp(0.95rem, 2.5vmin, 1.28rem);
   line-height: 1.35;
 }
 
 .stage {
-  min-height: 360px;
-  padding: clamp(24px, 4vw, 46px);
-  border-radius: 42px;
+  min-height: 0;
+  padding: clamp(14px, 3vmin, 34px);
+  border-radius: clamp(24px, 4vmin, 42px);
   display: grid;
   place-items: center;
   position: relative;
@@ -234,8 +237,8 @@ h1 {
 }
 
 .mascot {
-  width: clamp(108px, 16vw, 178px);
-  height: clamp(108px, 16vw, 178px);
+  width: clamp(82px, 14vmin, 142px);
+  height: clamp(82px, 14vmin, 142px);
   border: 8px solid #fff;
   border-radius: 36% 64% 44% 56%;
   background: linear-gradient(145deg, #ff4fa3, #6c4dff);
@@ -250,7 +253,7 @@ h1 {
 
 .mascot-face {
   color: #fff;
-  font-size: clamp(3rem, 8vw, 6.8rem);
+  font-size: clamp(2.3rem, 7vmin, 5.2rem);
   font-weight: 900;
   text-shadow: 0 6px 0 rgba(35, 25, 66, 0.18);
 }
@@ -261,8 +264,8 @@ h1 {
 }
 
 .now-label {
-  margin: 14px 0 0;
-  font-size: 0.92rem;
+  margin: clamp(8px, 1.6vmin, 14px) 0 0;
+  font-size: clamp(0.72rem, 1.6vmin, 0.9rem);
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -271,7 +274,7 @@ h1 {
 
 .now-key {
   margin: 0;
-  font-size: clamp(3.8rem, 10vw, 8rem);
+  font-size: clamp(3rem, 11vmin, 7rem);
   line-height: 0.95;
   font-weight: 1000;
   letter-spacing: -0.08em;
@@ -280,7 +283,7 @@ h1 {
 .now-caption {
   min-height: 1.5em;
   margin: 8px 0 0;
-  font-size: clamp(1rem, 2.1vw, 1.42rem);
+  font-size: clamp(0.9rem, 2.4vmin, 1.2rem);
   font-weight: 800;
 }
 
@@ -350,8 +353,34 @@ h1 {
   }
 
   .emma-card {
-    grid-template-columns: clamp(128px, 36vw, 180px) minmax(0, 1fr);
+    grid-template-columns: clamp(96px, 30vw, 148px) minmax(0, 1fr);
     border-radius: 28px;
+  }
+}
+
+@media (max-width: 860px) {
+  body {
+    overflow-y: auto;
+  }
+
+  .game-shell {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+  }
+}
+
+@media (max-height: 560px) and (min-width: 861px) {
+  .emma-card {
+    grid-template-columns: clamp(88px, 14vmin, 128px) minmax(0, 1fr);
+  }
+
+  h1 {
+    font-size: clamp(2rem, 7vmin, 4.6rem);
+  }
+
+  .lede {
+    font-size: clamp(0.85rem, 2.2vmin, 1.05rem);
   }
 }
 
