@@ -26,13 +26,26 @@ async function init() {
       return;
     }
 
-    const key = event.key.toLowerCase();
-    if (KEYS.includes(key)) {
+    const key = resolveSupportedKey(event);
+    if (key) {
       event.preventDefault();
       void playJingle(key);
     }
   });
+}
 
+function resolveSupportedKey(event) {
+  const typedKey = event.key?.toLowerCase?.() || "";
+  if (KEYS.includes(typedKey)) {
+    return typedKey;
+  }
+
+  const numpadMatch = /^Numpad([0-9])$/.exec(event.code || "");
+  if (numpadMatch) {
+    return numpadMatch[1];
+  }
+
+  return null;
 }
 
 function renderButtons() {
@@ -81,7 +94,7 @@ async function playJingle(key) {
   playbackId = token;
   stopCurrentAudio();
 
-  const musicPath = manifest.music?.src || "assets/jingles/jingle.wav";
+  const musicPath = manifest.music?.src || "assets/jingles/jingle.mp3";
   const voicePath = manifest.items?.[key]?.voiceSrc || `assets/jingles/voice/${key}.mp3`;
 
   try {

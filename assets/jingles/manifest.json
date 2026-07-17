@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-17T15:18:40.159Z",
+  "generatedAt": "2026-07-17T15:31:40.105Z",
   "mode": "fixed-music-plus-voice",
   "music": {
-    "label": "Shared one-second music cue",
-    "src": "assets/jingles/jingle.wav",
-    "durationSeconds": 1
+    "label": "Shared ElevenLabs music cue",
+    "src": "assets/jingles/jingle.mp3",
+    "durationSeconds": 2
   },
   "items": {
     "0": {
