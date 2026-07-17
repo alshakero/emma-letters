@@ -4,7 +4,6 @@ const DISPLAY = Object.fromEntries(
 );
 const SPARKLE_COLORS = ["#ffffff", "#ffed6b", "#31d0aa", "#20a4f3", "#ff4fa3"];
 
-const grid = document.querySelector("#button-grid");
 const nowKey = document.querySelector("#now-key");
 const nowCaption = document.querySelector("#now-caption");
 const stage = document.querySelector(".stage");
@@ -18,7 +17,6 @@ let fallbackAudioContext = null;
 init();
 
 async function init() {
-  renderButtons();
   manifest = await loadManifest();
 
   document.addEventListener("keydown", (event) => {
@@ -48,23 +46,6 @@ function resolveSupportedKey(event) {
   return null;
 }
 
-function renderButtons() {
-  const fragment = document.createDocumentFragment();
-
-  for (const key of KEYS) {
-    const button = document.createElement("button");
-    button.className = "letter-button";
-    button.type = "button";
-    button.dataset.key = key;
-    button.textContent = DISPLAY[key];
-    button.setAttribute("aria-label", `Play ${describeKey(key)} jingle`);
-    button.addEventListener("click", () => void playJingle(key));
-    fragment.append(button);
-  }
-
-  grid.append(fragment);
-}
-
 async function loadManifest() {
   try {
     const response = await fetch("assets/jingles/manifest.json", { cache: "no-cache" });
@@ -81,14 +62,12 @@ async function loadManifest() {
 
 async function playJingle(key) {
   const label = DISPLAY[key];
-  const button = document.querySelector(`[data-key="${key}"]`);
   const caption = `This is ${label}!`;
 
   nowKey.textContent = label;
   nowCaption.textContent = caption;
   stage.classList.add("is-playing");
-  pulseButton(button);
-  throwSparkles(button || stage);
+  throwSparkles(stage);
 
   const token = playbackId + 1;
   playbackId = token;
@@ -190,15 +169,6 @@ function isCurrentPlayback(token) {
   return token === playbackId;
 }
 
-function pulseButton(button) {
-  if (!button) {
-    return;
-  }
-
-  button.classList.add("is-active");
-  window.setTimeout(() => button.classList.remove("is-active"), 220);
-}
-
 function throwSparkles(anchor) {
   const rect = anchor.getBoundingClientRect();
   const centerX = rect.left + rect.width / 2;
@@ -294,8 +264,4 @@ function chooseFallbackVoice() {
     voices.find((voice) => /^en[-_]/i.test(voice.lang)) ||
     null
   );
-}
-
-function describeKey(key) {
-  return /[a-z]/.test(key) ? `letter ${key.toUpperCase()}` : `number ${key}`;
 }

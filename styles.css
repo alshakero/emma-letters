@@ -10,7 +10,6 @@
   --green: #31d0aa;
   --blue: #20a4f3;
   --shadow: 0 24px 70px rgba(35, 25, 66, 0.25);
-  --button-shadow: 0 14px 0 rgba(35, 25, 66, 0.16), 0 24px 38px rgba(35, 25, 66, 0.18);
   font-family:
     "Trebuchet MS",
     "Avenir Next Rounded",
@@ -61,10 +60,6 @@ body::after {
   animation-delay: -4s;
 }
 
-button {
-  font: inherit;
-}
-
 .game-shell {
   width: 100%;
   min-height: 100vh;
@@ -99,6 +94,11 @@ button {
   overflow: hidden;
 }
 
+.hero-copy > * {
+  position: relative;
+  z-index: 1;
+}
+
 .hero-copy::after {
   position: absolute;
   inset: auto -64px -88px auto;
@@ -108,6 +108,47 @@ button {
   content: "";
   background: conic-gradient(from 90deg, var(--green), var(--blue), var(--pink), var(--yellow), var(--green));
   opacity: 0.32;
+  z-index: 0;
+}
+
+.emma-card {
+  width: min(100%, 780px);
+  margin: 0 0 clamp(18px, 3vw, 34px);
+  padding: clamp(14px, 2.2vw, 26px);
+  border: 4px solid rgba(255, 255, 255, 0.84);
+  border-radius: 36px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 44px rgba(35, 25, 66, 0.18);
+  display: grid;
+  grid-template-columns: clamp(160px, 20vw, 280px) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(14px, 2vw, 22px);
+}
+
+.emma-photo {
+  width: 100%;
+  aspect-ratio: 1;
+  border: clamp(6px, 0.8vw, 10px) solid #fff;
+  border-radius: 34% 66% 46% 54%;
+  object-fit: cover;
+  object-position: 50% 44%;
+  box-shadow: 0 12px 0 rgba(35, 25, 66, 0.12);
+}
+
+.emma-name {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.8vw, 3.2rem);
+  line-height: 0.95;
+  font-weight: 1000;
+  letter-spacing: -0.06em;
+}
+
+.emma-note {
+  margin: 8px 0 0;
+  font-size: clamp(0.95rem, 1.7vw, 1.22rem);
+  line-height: 1.25;
+  font-weight: 900;
+  color: rgba(35, 25, 66, 0.72);
 }
 
 .eyebrow {
@@ -243,75 +284,6 @@ h1 {
   font-weight: 800;
 }
 
-.controls {
-  border-radius: 36px;
-}
-
-.button-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(clamp(144px, 16vw, 264px), 1fr));
-  gap: clamp(10px, 1.4vw, 18px);
-}
-
-.letter-button {
-  width: 100%;
-  aspect-ratio: 1;
-  border: 0;
-  border-radius: clamp(32px, 5.4vw, 68px);
-  color: #fff;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  font-size: clamp(4rem, 11.6vw, 9.6rem);
-  font-weight: 1000;
-  line-height: 1;
-  text-shadow: 0 5px 0 rgba(35, 25, 66, 0.22);
-  box-shadow: var(--button-shadow);
-  transform: translateY(0);
-  transition:
-    transform 130ms ease,
-    box-shadow 130ms ease,
-    filter 160ms ease;
-  touch-action: manipulation;
-}
-
-.letter-button:nth-child(6n + 1) {
-  background: linear-gradient(145deg, #ff4fa3, #ff7a59);
-}
-
-.letter-button:nth-child(6n + 2) {
-  background: linear-gradient(145deg, #6c4dff, #20a4f3);
-}
-
-.letter-button:nth-child(6n + 3) {
-  background: linear-gradient(145deg, #31d0aa, #00a896);
-}
-
-.letter-button:nth-child(6n + 4) {
-  background: linear-gradient(145deg, #ff9f1c, #ffbf69);
-}
-
-.letter-button:nth-child(6n + 5) {
-  background: linear-gradient(145deg, #7b2ff7, #f107a3);
-}
-
-.letter-button:nth-child(6n) {
-  background: linear-gradient(145deg, #0bb4ff, #00f5d4);
-}
-
-.letter-button:hover,
-.letter-button:focus-visible {
-  outline: 6px solid rgba(255, 255, 255, 0.92);
-  outline-offset: 4px;
-  filter: brightness(1.08) saturate(1.1);
-}
-
-.letter-button:active,
-.letter-button.is-active {
-  box-shadow: 0 4px 0 rgba(35, 25, 66, 0.18), 0 12px 24px rgba(35, 25, 66, 0.12);
-  transform: translateY(9px) scale(0.98);
-}
-
 .sparkle {
   position: fixed;
   z-index: 4;
@@ -377,6 +349,10 @@ h1 {
     padding: 10px 10px 24px;
   }
 
+  .emma-card {
+    grid-template-columns: clamp(128px, 36vw, 180px) minmax(0, 1fr);
+    border-radius: 28px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
