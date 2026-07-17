@@ -1,0 +1,186 @@
+{
+  "generatedAt": "2026-07-17T14:18:44.340Z",
+  "mode": "music",
+  "items": {
+    "0": {
+      "label": "0",
+      "src": "assets/jingles/0.mp3",
+      "caption": "This is 0!"
+    },
+    "1": {
+      "label": "1",
+      "src": "assets/jingles/1.mp3",
+      "caption": "This is 1!"
+    },
+    "2": {
+      "label": "2",
+      "src": "assets/jingles/2.mp3",
+      "caption": "This is 2!"
+    },
+    "3": {
+      "label": "3",
+      "src": "assets/jingles/3.mp3",
+      "caption": "This is 3!"
+    },
+    "4": {
+      "label": "4",
+      "src": "assets/jingles/4.mp3",
+      "caption": "This is 4!"
+    },
+    "5": {
+      "label": "5",
+      "src": "assets/jingles/5.mp3",
+      "caption": "This is 5!"
+    },
+    "6": {
+      "label": "6",
+      "src": "assets/jingles/6.mp3",
+      "caption": "This is 6!"
+    },
+    "7": {
+      "label": "7",
+      "src": "assets/jingles/7.mp3",
+      "caption": "This is 7!"
+    },
+    "8": {
+      "label": "8",
+      "src": "assets/jingles/8.mp3",
+      "caption": "This is 8!"
+    },
+    "9": {
+      "label": "9",
+      "src": "assets/jingles/9.mp3",
+      "caption": "This is 9!"
+    },
+    "a": {
+      "label": "A",
+      "src": "assets/jingles/a.mp3",
+      "caption": "This is A!"
+    },
+    "b": {
+      "label": "B",
+      "src": "assets/jingles/b.mp3",
+      "caption": "This is B!"
+    },
+    "c": {
+      "label": "C",
+      "src": "assets/jingles/c.mp3",
+      "caption": "This is C!"
+    },
+    "d": {
+      "label": "D",
+      "src": "assets/jingles/d.mp3",
+      "caption": "This is D!"
+    },
+    "e": {
+      "label": "E",
+      "src": "assets/jingles/e.mp3",
+      "caption": "This is E!"
+    },
+    "f": {
+      "label": "F",
+      "src": "assets/jingles/f.mp3",
+      "caption": "This is F!"
+    },
+    "g": {
+      "label": "G",
+      "src": "assets/jingles/g.mp3",
+      "caption": "This is G!"
+    },
+    "h": {
+      "label": "H",
+      "src": "assets/jingles/h.mp3",
+      "caption": "This is H!"
+    },
+    "i": {
+      "label": "I",
+      "src": "assets/jingles/i.mp3",
+      "caption": "This is I!"
+    },
+    "j": {
+      "label": "J",
+      "src": "assets/jingles/j.mp3",
+      "caption": "This is J!"
+    },
+    "k": {
+      "label": "K",
+      "src": "assets/jingles/k.mp3",
+      "caption": "This is K!"
+    },
+    "l": {
+      "label": "L",
+      "src": "assets/jingles/l.mp3",
+      "caption": "This is L!"
+    },
+    "m": {
+      "label": "M",
+      "src": "assets/jingles/m.mp3",
+      "caption": "This is M!"
+    },
+    "n": {
+      "label": "N",
+      "src": "assets/jingles/n.mp3",
+      "caption": "This is N!"
+    },
+    "o": {
+      "label": "O",
+      "src": "assets/jingles/o.mp3",
+      "caption": "This is O!"
+    },
+    "p": {
+      "label": "P",
+      "src": "assets/jingles/p.mp3",
+      "caption": "This is P!"
+    },
+    "q": {
+      "label": "Q",
+      "src": "assets/jingles/q.mp3",
+      "caption": "This is Q!"
+    },
+    "r": {
+      "label": "R",
+      "src": "assets/jingles/r.mp3",
+      "caption": "This is R!"
+    },
+    "s": {
+      "label": "S",
+      "src": "assets/jingles/s.mp3",
+      "caption": "This is S!"
+    },
+    "t": {
+      "label": "T",
+      "src": "assets/jingles/t.mp3",
+      "caption": "This is T!"
+    },
+    "u": {
+      "label": "U",
+      "src": "assets/jingles/u.mp3",
+      "caption": "This is U!"
+    },
+    "v": {
+      "label": "V",
+      "src": "assets/jingles/v.mp3",
+      "caption": "This is V!"
+    },
+    "w": {
+      "label": "W",
+      "src": "assets/jingles/w.mp3",
+      "caption": "This is W!"
+    },
+    "x": {
+      "label": "X",
+      "src": "assets/jingles/x.mp3",
+      "caption": "This is X!"
+    },
+    "y": {
+      "label": "Y",
+      "src": "assets/jingles/y.mp3",
+      "caption": "This is Y!"
+    },
+    "z": {
+      "label": "Z",
+      "src": "assets/jingles/z.mp3",
+      "caption": "This is Z!"
+    }
+  }
+}
