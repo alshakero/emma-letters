@@ -1,5 +1,6 @@
 const VIDEO_ID = "Ypz3bsr6SZc";
 const SONG_END_SECONDS = 239.12;
+const START_EARLY_SECONDS = 0.5;
 const STOP_EARLY_SECONDS = 0.5;
 const SPARKLE_COLORS = ["#ffffff", "#ffed6b", "#31d0aa", "#20a4f3", "#ff4fa3"];
 
@@ -213,7 +214,7 @@ function playLetter(segment) {
   }
 
   try {
-    player.seekTo(segment.start, true);
+    player.seekTo(getStartTime(segment), true);
     player.playVideo();
     scheduleStop(segment, token);
   } catch {
@@ -226,10 +227,14 @@ function playLetter(segment) {
 function updateNowPlaying(segment) {
   nowKey.textContent = segment.label;
   nowCaption.textContent = `Emma picked ${segment.label}.`;
-  playerStatus.textContent = `Playing ${formatTime(segment.start)} – ${formatTime(segment.end)}`;
+  playerStatus.textContent = `Playing ${formatTime(getStartTime(segment))} – ${formatTime(segment.end)}`;
   stage.classList.add("is-playing");
   stage.classList.remove("has-error");
   videoFrame.style.setProperty("--letter-color", getLetterColor(segment.key));
+}
+
+function getStartTime(segment) {
+  return Math.max(0, segment.start - START_EARLY_SECONDS);
 }
 
 function scheduleStop(segment, token) {
