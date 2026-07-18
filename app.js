@@ -2,6 +2,7 @@ const VIDEO_ID = "Ypz3bsr6SZc";
 const SONG_END_SECONDS = 239.12;
 const START_EARLY_SECONDS = 0.5;
 const STOP_EARLY_SECONDS = 0.5;
+const KEY_PRESS_THROTTLE_MS = 500;
 const SPARKLE_COLORS = ["#ffffff", "#ffed6b", "#31d0aa", "#20a4f3", "#ff4fa3"];
 
 // Derived from the supplied YouTube timedtext. The captions are auto-generated,
@@ -57,6 +58,7 @@ let playerReady = false;
 let queuedSegment = null;
 let activeToken = 0;
 let stopInterval = 0;
+let ignoreKeyPressesUntil = 0;
 
 init();
 
@@ -78,6 +80,10 @@ function handleKeyDown(event) {
   }
 
   event.preventDefault();
+  if (!shouldHandleKeyPress()) {
+    return;
+  }
+
   playLetter(SEGMENTS_BY_KEY.get(key));
 }
 
@@ -93,6 +99,16 @@ function resolveLetterKey(event) {
   }
 
   return null;
+}
+
+function shouldHandleKeyPress() {
+  const now = Date.now();
+  if (now < ignoreKeyPressesUntil) {
+    return false;
+  }
+
+  ignoreKeyPressesUntil = now + KEY_PRESS_THROTTLE_MS;
+  return true;
 }
 
 function loadYouTubeApi() {
