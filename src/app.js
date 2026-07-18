@@ -1,137 +1,283 @@
-const KEYS = "abcdefghijklmnopqrstuvwxyz0123456789".split("");
-const DISPLAY = Object.fromEntries(
-  KEYS.map((key) => [key, /[a-z]/.test(key) ? key.toUpperCase() : key]),
-);
+const VIDEO_ID = "Ypz3bsr6SZc";
+const SONG_END_SECONDS = 239.12;
 const SPARKLE_COLORS = ["#ffffff", "#ffed6b", "#31d0aa", "#20a4f3", "#ff4fa3"];
 
-const grid = document.querySelector("#button-grid");
+// Derived from the supplied YouTube timedtext. The captions are auto-generated,
+// so a few ASR words are odd, but these are the A-Z introduction timestamps.
+const LETTER_STARTS = [
+  ["a", 9.2],
+  ["b", 17.16],
+  ["c", 25.6],
+  ["d", 33.079],
+  ["e", 41.12],
+  ["f", 53.16],
+  ["g", 61.039],
+  ["h", 69.24],
+  ["i", 77.24],
+  ["j", 85.119],
+  ["k", 97.159],
+  ["l", 105.079],
+  ["m", 113.159],
+  ["n", 121.2],
+  ["o", 129.16],
+  ["p", 141.16],
+  ["q", 149.08],
+  ["r", 157.08],
+  ["s", 165.159],
+  ["t", 173.12],
+  ["u", 189.12],
+  ["v", 197.12],
+  ["w", 205.159],
+  ["x", 213.159],
+  ["y", 221.2],
+  ["z", 229.04],
+];
+
+const LETTER_SEGMENTS = LETTER_STARTS.map(([key, start], index) => {
+  const next = LETTER_STARTS[index + 1];
+  return {
+    key,
+    label: key.toUpperCase(),
+    start,
+    end: next ? next[1] : SONG_END_SECONDS,
+  };
+});
+
+const SEGMENTS_BY_KEY = new Map(LETTER_SEGMENTS.map((segment) => [segment.key, segment]));
 const nowKey = document.querySelector("#now-key");
 const nowCaption = document.querySelector("#now-caption");
+const playerStatus = document.querySelector("#player-status");
 const stage = document.querySelector(".stage");
-const muteButton = document.querySelector("#mute-button");
+const videoFrame = document.querySelector(".video-frame");
 
-let manifest = {};
-let currentAudio = null;
-let muted = false;
-let fallbackAudioContext = null;
+let player = null;
+let playerReady = false;
+let queuedSegment = null;
+let activeToken = 0;
+let stopInterval = 0;
 
 init();
 
-async function init() {
-  renderButtons();
-  manifest = await loadManifest();
-
-  document.addEventListener("keydown", (event) => {
-    if (event.metaKey || event.ctrlKey || event.altKey) {
-      return;
-    }
-
-    const key = event.key.toLowerCase();
-    if (KEYS.includes(key)) {
-      event.preventDefault();
-      void playJingle(key);
-    }
-  });
-
-  muteButton.addEventListener("click", () => {
-    muted = !muted;
-    muteButton.textContent = muted ? "Sound off" : "Sound on";
-    muteButton.setAttribute("aria-pressed", String(muted));
-    if (muted && currentAudio) {
-      currentAudio.pause();
-    }
-  });
+function init() {
+  document.body.tabIndex = -1;
+  focusPage();
+  document.addEventListener("keydown", handleKeyDown);
+  loadYouTubeApi();
 }
 
-function renderButtons() {
-  const fragment = document.createDocumentFragment();
-
-  for (const key of KEYS) {
-    const button = document.createElement("button");
-    button.className = "letter-button";
-    button.type = "button";
-    button.dataset.key = key;
-    button.textContent = DISPLAY[key];
-    button.setAttribute("aria-label", `Play ${describeKey(key)} jingle`);
-    button.addEventListener("click", () => void playJingle(key));
-    fragment.append(button);
-  }
-
-  grid.append(fragment);
-}
-
-async function loadManifest() {
-  try {
-    const response = await fetch("assets/jingles/manifest.json", { cache: "no-cache" });
-    if (!response.ok) {
-      throw new Error(`Manifest request failed: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.items || {};
-  } catch (error) {
-    console.info("Using default jingle paths until generated assets exist.", error);
-    return {};
-  }
-}
-
-async function playJingle(key) {
-  const label = DISPLAY[key];
-  const button = document.querySelector(`[data-key="${key}"]`);
-  const caption = `This is ${label}!`;
-
-  nowKey.textContent = label;
-  nowCaption.textContent = caption;
-  stage.classList.add("is-playing");
-  pulseButton(button);
-  throwSparkles(button || stage);
-
-  if (muted) {
-    window.setTimeout(() => stage.classList.remove("is-playing"), 520);
+function handleKeyDown(event) {
+  if (event.metaKey || event.ctrlKey || event.altKey) {
     return;
   }
 
-  stopCurrentAudio();
+  const key = resolveLetterKey(event);
+  if (!key) {
+    return;
+  }
 
-  const audioPath = manifest[key]?.src || `assets/jingles/${key}.mp3`;
-  let handledAudioError = false;
-  const useFallback = async () => {
-    if (handledAudioError) {
-      return;
-    }
-    handledAudioError = true;
-    stage.classList.remove("is-playing");
-    await playFallbackJingle(label);
+  event.preventDefault();
+  playLetter(SEGMENTS_BY_KEY.get(key));
+}
+
+function resolveLetterKey(event) {
+  const typedKey = typeof event.key === "string" ? event.key.toLowerCase() : "";
+  if (SEGMENTS_BY_KEY.has(typedKey)) {
+    return typedKey;
+  }
+
+  const codeMatch = /^Key([A-Z])$/.exec(event.code || "");
+  if (codeMatch) {
+    return codeMatch[1].toLowerCase();
+  }
+
+  return null;
+}
+
+function loadYouTubeApi() {
+  if (window.YT && window.YT.Player) {
+    createPlayer();
+    return;
+  }
+
+  window.onYouTubeIframeAPIReady = createPlayer;
+
+  const existingScript = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+  if (existingScript) {
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.src = "https://www.youtube.com/iframe_api";
+  script.async = true;
+  script.onerror = () => {
+    stage.classList.add("has-error");
+    playerStatus.textContent = "The alphabet video could not load on this TV.";
+    nowKey.textContent = "Oops";
+    nowCaption.textContent = "YouTube is unavailable here, so Emma cannot play the song yet.";
   };
+  document.head.append(script);
+}
+
+function createPlayer() {
+  player = new window.YT.Player("youtube-player", {
+    videoId: VIDEO_ID,
+    playerVars: {
+      controls: 0,
+      disablekb: 1,
+      fs: 0,
+      iv_load_policy: 3,
+      modestbranding: 1,
+      playsinline: 1,
+      rel: 0,
+      origin: window.location.origin,
+    },
+    events: {
+      onReady: handlePlayerReady,
+      onStateChange: handlePlayerStateChange,
+      onError: handlePlayerError,
+      onAutoplayBlocked: handleAutoplayBlocked,
+    },
+  });
+}
+
+function handlePlayerReady(event) {
+  player = event.target;
+  playerReady = true;
+  stage.classList.add("is-ready");
+  playerStatus.textContent = "Alphabet song ready";
+  nowKey.textContent = "A-Z";
+  nowCaption.textContent = "Emma, press a letter on your keyboard.";
+
+  const iframe = player.getIframe();
+  iframe.title = "Alphabet song for kids";
+  iframe.tabIndex = -1;
+
+  player.cueVideoById({
+    videoId: VIDEO_ID,
+    startSeconds: 0,
+  });
+
+  if (queuedSegment) {
+    const segment = queuedSegment;
+    queuedSegment = null;
+    playLetter(segment);
+  }
+}
+
+function handlePlayerStateChange(event) {
+  if (!window.YT || !window.YT.PlayerState) {
+    return;
+  }
+
+  if (event.data === window.YT.PlayerState.PLAYING) {
+    stage.classList.add("is-playing");
+    return;
+  }
+
+  if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
+    stage.classList.remove("is-playing");
+  }
+}
+
+function handlePlayerError() {
+  clearStopTimer();
+  stage.classList.remove("is-playing");
+  stage.classList.add("has-error");
+  playerStatus.textContent = "The alphabet video could not play on this TV.";
+  nowKey.textContent = "Oops";
+  nowCaption.textContent = "No fallback sounds are enabled, so try reloading the page.";
+}
+
+function handleAutoplayBlocked() {
+  clearStopTimer();
+  stage.classList.remove("is-playing");
+  playerStatus.textContent = "Press the letter again to start the video.";
+  nowCaption.textContent = "The TV blocked the first play attempt, but the song is ready.";
+}
+
+function playLetter(segment) {
+  const token = activeToken + 1;
+  activeToken = token;
+  queuedSegment = null;
+  clearStopTimer();
+  updateNowPlaying(segment);
+  throwSparkles(stage);
+  focusPage();
+
+  if (!playerReady) {
+    queuedSegment = segment;
+    playerStatus.textContent = "Loading alphabet song…";
+    nowCaption.textContent = `Getting ${segment.label} ready for Emma.`;
+    return;
+  }
 
   try {
-    currentAudio = new Audio(audioPath);
-    currentAudio.preload = "auto";
-    currentAudio.addEventListener("ended", () => stage.classList.remove("is-playing"), { once: true });
-    currentAudio.addEventListener("error", () => void useFallback(), { once: true });
-    await currentAudio.play();
-  } catch (error) {
-    console.info(`Falling back for ${label}; generated MP3 not playable yet.`, error);
-    await useFallback();
+    player.seekTo(segment.start, true);
+    player.playVideo();
+    scheduleStop(segment, token);
+  } catch {
+    stage.classList.add("has-error");
+    nowKey.textContent = "Oops";
+    nowCaption.textContent = "The YouTube player is not ready yet. Press the letter again.";
   }
 }
 
-function stopCurrentAudio() {
-  if (!currentAudio) {
-    return;
-  }
-
-  currentAudio.pause();
-  currentAudio.currentTime = 0;
-  currentAudio = null;
+function updateNowPlaying(segment) {
+  nowKey.textContent = segment.label;
+  nowCaption.textContent = `Emma picked ${segment.label}.`;
+  playerStatus.textContent = `Playing ${formatTime(segment.start)} – ${formatTime(segment.end)}`;
+  stage.classList.add("is-playing");
+  stage.classList.remove("has-error");
+  videoFrame.style.setProperty("--letter-color", getLetterColor(segment.key));
 }
 
-function pulseButton(button) {
-  if (!button) {
-    return;
+function scheduleStop(segment, token) {
+  stopInterval = window.setInterval(() => {
+    if (token !== activeToken || !playerReady || !player) {
+      clearStopTimer();
+      return;
+    }
+
+    const currentTime = player.getCurrentTime();
+    if (currentTime >= segment.end - 0.08) {
+      player.pauseVideo();
+      clearStopTimer();
+      stage.classList.remove("is-playing");
+      playerStatus.textContent = `${segment.label} finished`;
+    }
+  }, 80);
+}
+
+function clearStopTimer() {
+  if (stopInterval) {
+    window.clearInterval(stopInterval);
+    stopInterval = 0;
+  }
+}
+
+function focusPage() {
+  if (document.activeElement && document.activeElement !== document.body) {
+    document.activeElement.blur();
   }
 
-  button.classList.add("is-active");
-  window.setTimeout(() => button.classList.remove("is-active"), 220);
+  try {
+    document.body.focus({ preventScroll: true });
+  } catch {
+    document.body.focus();
+  }
+}
+
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, "0");
+  return `${minutes}:${remainingSeconds}`;
+}
+
+function getLetterColor(key) {
+  const index = key.charCodeAt(0) - "a".charCodeAt(0);
+  return SPARKLE_COLORS[index % SPARKLE_COLORS.length];
 }
 
 function throwSparkles(anchor) {
@@ -150,49 +296,4 @@ function throwSparkles(anchor) {
     document.body.append(sparkle);
     sparkle.addEventListener("animationend", () => sparkle.remove(), { once: true });
   }
-}
-
-async function playFallbackJingle(label) {
-  if ("speechSynthesis" in window) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(`This is ${label}!`);
-    utterance.rate = 0.9;
-    utterance.pitch = 1.35;
-    window.speechSynthesis.speak(utterance);
-  }
-
-  await playFallbackNotes();
-}
-
-async function playFallbackNotes() {
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) {
-    return;
-  }
-
-  if (!fallbackAudioContext) {
-    fallbackAudioContext = new AudioContext();
-  }
-  if (fallbackAudioContext.state === "suspended") {
-    await fallbackAudioContext.resume();
-  }
-
-  const now = fallbackAudioContext.currentTime;
-  const notes = [523.25, 659.25, 783.99, 1046.5];
-  notes.forEach((frequency, index) => {
-    const oscillator = fallbackAudioContext.createOscillator();
-    const gain = fallbackAudioContext.createGain();
-    oscillator.type = "triangle";
-    oscillator.frequency.setValueAtTime(frequency, now + index * 0.1);
-    gain.gain.setValueAtTime(0, now + index * 0.1);
-    gain.gain.linearRampToValueAtTime(0.12, now + index * 0.1 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.1 + 0.34);
-    oscillator.connect(gain).connect(fallbackAudioContext.destination);
-    oscillator.start(now + index * 0.1);
-    oscillator.stop(now + index * 0.1 + 0.35);
-  });
-}
-
-function describeKey(key) {
-  return /[a-z]/.test(key) ? `letter ${key.toUpperCase()}` : `number ${key}`;
 }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="A colorful TV kids game that plays cheerful alphabet and number jingles."
+      content="A colorful TV kids game for Emma that jumps through an alphabet song with the keyboard."
     />
     <meta name="theme-color" content="#6c4dff" />
     <title>Emma Letters</title>
@@ -16,11 +16,12 @@
     <main class="game-shell" aria-labelledby="game-title">
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Tiny TV Jingle Box</p>
-          <h1 id="game-title">Press a letter or number!</h1>
+          <p class="visually-hidden">Emma is pictured in the background holding her bunny.</p>
+          <p class="eyebrow">Emma’s Alphabet TV</p>
+          <h1 id="game-title">Emma, press a letter!</h1>
           <p class="lede">
-            Tap a tile, use a keyboard, or let the remote send keys from
-            <strong>A-Z</strong> and <strong>0-9</strong>.
+            Emma is in the picture, and her keyboard controls the song. Press
+            <strong>A-Z</strong> to jump to that letter.
           </p>
         </div>
 
@@ -30,27 +31,16 @@
             <span></span>
             <span></span>
           </div>
-          <div class="mascot" aria-hidden="true">
-            <span class="mascot-face">♪</span>
+          <div class="video-frame" aria-label="Alphabet song video">
+            <div id="youtube-player"></div>
+            <p class="player-status" id="player-status">Loading alphabet song…</p>
           </div>
-          <p class="now-label">Now playing</p>
-          <p class="now-key" id="now-key">Ready?</p>
-          <p class="now-caption" id="now-caption">Pick any button to start the music.</p>
+          <div class="play-copy">
+            <p class="now-label">Now playing</p>
+            <p class="now-key" id="now-key">A-Z</p>
+            <p class="now-caption" id="now-caption">Emma, press any letter on your keyboard.</p>
+          </div>
         </div>
-      </section>
-
-      <section class="controls" aria-label="Jingle buttons">
-        <div class="button-grid" id="button-grid"></div>
-      </section>
-
-      <section class="tips" aria-label="Game tips">
-        <p>
-          Tip: on a TV or kiosk, keep this page focused and every supported key
-          press becomes a jingle.
-        </p>
-        <button class="mute-button" id="mute-button" type="button" aria-pressed="false">
-          Sound on
-        </button>
       </section>
     </main>
 
