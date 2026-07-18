@@ -10,6 +10,7 @@ const stage = document.querySelector(".stage");
 
 let manifest = {};
 let currentAudio = null;
+let currentAudioCleanup = null;
 let currentAudioReject = null;
 let playbackId = 0;
 let fallbackAudioContext = null;
@@ -95,15 +96,42 @@ async function cacheAudio(src) {
     return audioCache.get(src);
   }
 
-  const response = await fetch(src, { cache: "force-cache" });
-  if (!response.ok) {
-    throw new Error(`Audio request failed: ${response.status}`);
-  }
+  const audio = new Audio(src);
+  audio.preload = "auto";
+  audioCache.set(src, audio);
 
-  const blob = await response.blob();
-  const cachedSrc = URL.createObjectURL(blob);
-  audioCache.set(src, cachedSrc);
-  return cachedSrc;
+  await new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      audio.removeEventListener("canplaythrough", handleReady);
+      audio.removeEventListener("loadeddata", handleReady);
+      audio.removeEventListener("error", handleError);
+    };
+    const settle = (callback, value) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      callback(value);
+    };
+    const handleReady = () => {
+      settle(resolve);
+    };
+    const handleError = () => {
+      audioCache.delete(src);
+      settle(reject, new Error(`Unable to preload ${src}`));
+    };
+    const timeout = window.setTimeout(() => settle(resolve), 5000);
+
+    audio.addEventListener("canplaythrough", handleReady);
+    audio.addEventListener("loadeddata", handleReady);
+    audio.addEventListener("error", handleError);
+    audio.load();
+  });
+
+  return audio;
 }
 
 async function loadManifest() {
@@ -184,11 +212,15 @@ function stopCurrentAudio() {
     return;
   }
 
+  const audio = currentAudio;
+  const cleanup = currentAudioCleanup;
   const reject = currentAudioReject;
-  currentAudio.pause();
-  currentAudio.currentTime = 0;
   currentAudio = null;
+  currentAudioCleanup = null;
   currentAudioReject = null;
+  cleanup?.();
+  audio.pause();
+  safelyResetAudio(audio);
   reject?.(new Error("Playback was stopped."));
 }
 
@@ -199,40 +231,51 @@ function playAudioFile(src, token) {
       return;
     }
 
-    const audio = new Audio(audioCache.get(src) || src);
+    const audio = audioCache.get(src) || new Audio(src);
     currentAudio = audio;
-    currentAudioReject = reject;
     audio.preload = "auto";
-    audio.addEventListener(
-      "ended",
-      () => {
-        if (currentAudio === audio) {
-          currentAudio = null;
-          currentAudioReject = null;
-        }
-        resolve();
-      },
-      { once: true },
-    );
-    audio.addEventListener(
-      "error",
-      () => {
-        if (currentAudio === audio) {
-          currentAudio = null;
-          currentAudioReject = null;
-        }
-        reject(new Error(`Unable to play ${src}`));
-      },
-      { once: true },
-    );
-    audio.play().catch((error) => {
+    const cleanup = () => {
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
+    };
+    const clearCurrentAudio = () => {
       if (currentAudio === audio) {
         currentAudio = null;
+        currentAudioCleanup = null;
         currentAudioReject = null;
       }
+    };
+    const handleEnded = () => {
+      cleanup();
+      clearCurrentAudio();
+      resolve();
+    };
+    const handleError = () => {
+      cleanup();
+      clearCurrentAudio();
+      reject(new Error(`Unable to play ${src}`));
+    };
+
+    currentAudioCleanup = cleanup;
+    currentAudioReject = reject;
+    safelyResetAudio(audio);
+    audio.addEventListener("ended", handleEnded, { once: true });
+    audio.addEventListener("error", handleError, { once: true });
+    audio.play().catch((error) => {
+      cleanup();
+      clearCurrentAudio();
       reject(error);
     });
   });
+}
+
+function safelyResetAudio(audio) {
+  try {
+    audio.currentTime = 0;
+  } catch {
+    // Some TV browsers throw until enough data is available. Playing from the
+    // beginning is still the goal; if reset is blocked, just continue.
+  }
 }
 
 function isCurrentPlayback(token) {
