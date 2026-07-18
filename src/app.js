@@ -1,5 +1,6 @@
 const VIDEO_ID = "Ypz3bsr6SZc";
 const SONG_END_SECONDS = 239.12;
+const STOP_EARLY_SECONDS = 0.5;
 const SPARKLE_COLORS = ["#ffffff", "#ffed6b", "#31d0aa", "#20a4f3", "#ff4fa3"];
 
 // Derived from the supplied YouTube timedtext. The captions are auto-generated,
@@ -232,6 +233,8 @@ function updateNowPlaying(segment) {
 }
 
 function scheduleStop(segment, token) {
+  const stopAt = Math.max(segment.start + 0.5, segment.end - STOP_EARLY_SECONDS);
+
   stopInterval = window.setInterval(() => {
     if (token !== activeToken || !playerReady || !player) {
       clearStopTimer();
@@ -239,7 +242,7 @@ function scheduleStop(segment, token) {
     }
 
     const currentTime = player.getCurrentTime();
-    if (currentTime >= segment.end - 0.08) {
+    if (currentTime >= stopAt) {
       player.pauseVideo();
       clearStopTimer();
       stage.classList.remove("is-playing");
