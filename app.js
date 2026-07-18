@@ -13,11 +13,21 @@ let currentAudio = null;
 let currentAudioReject = null;
 let playbackId = 0;
 let fallbackAudioContext = null;
+let soundsReady = false;
+let soundsReadyPromise = Promise.resolve();
+const audioCache = new Map();
 
 init();
 
 async function init() {
   manifest = await loadManifest();
+  nowKey.textContent = "Loading…";
+  nowCaption.textContent = "Emma’s sounds are getting ready.";
+  soundsReadyPromise = cacheAllSounds().then(() => {
+    soundsReady = true;
+    nowKey.textContent = "Ready?";
+    nowCaption.textContent = "Emma, press any letter or number on your keyboard.";
+  });
 
   document.addEventListener("keydown", (event) => {
     if (event.metaKey || event.ctrlKey || event.altKey) {
@@ -46,6 +56,56 @@ function resolveSupportedKey(event) {
   return null;
 }
 
+async function cacheAllSounds() {
+  const paths = getAudioPaths();
+  let cachedCount = 0;
+  const failedPaths = [];
+
+  await Promise.all(
+    paths.map(async (src) => {
+      try {
+        await cacheAudio(src);
+      } catch (error) {
+        failedPaths.push(src);
+        console.info(`Unable to preload ${src}; it will be loaded on demand if needed.`, error);
+      } finally {
+        cachedCount += 1;
+        nowCaption.textContent = `Loading Emma’s sounds ${cachedCount}/${paths.length}…`;
+      }
+    }),
+  );
+
+  if (failedPaths.length > 0) {
+    console.info(`Finished preloading with ${failedPaths.length} missing sound(s).`, failedPaths);
+  }
+}
+
+function getAudioPaths() {
+  const paths = new Set([manifest.music?.src || "assets/jingles/jingle.mp3"]);
+
+  for (const key of KEYS) {
+    paths.add(manifest.items?.[key]?.voiceSrc || `assets/jingles/voice/${key}.mp3`);
+  }
+
+  return [...paths];
+}
+
+async function cacheAudio(src) {
+  if (audioCache.has(src)) {
+    return audioCache.get(src);
+  }
+
+  const response = await fetch(src, { cache: "force-cache" });
+  if (!response.ok) {
+    throw new Error(`Audio request failed: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const cachedSrc = URL.createObjectURL(blob);
+  audioCache.set(src, cachedSrc);
+  return cachedSrc;
+}
+
 async function loadManifest() {
   try {
     const response = await fetch("assets/jingles/manifest.json", { cache: "no-cache" });
@@ -64,14 +124,24 @@ async function playJingle(key) {
   const label = DISPLAY[key];
   const caption = `This is ${label}!`;
 
+  const token = playbackId + 1;
+  playbackId = token;
+  stopCurrentAudio();
+
+  if (!soundsReady) {
+    nowKey.textContent = "Loading…";
+    nowCaption.textContent = `Getting ${label} ready.`;
+    stage.classList.add("is-playing");
+    await soundsReadyPromise;
+    if (!isCurrentPlayback(token)) {
+      return;
+    }
+  }
+
   nowKey.textContent = label;
   nowCaption.textContent = caption;
   stage.classList.add("is-playing");
   throwSparkles(stage);
-
-  const token = playbackId + 1;
-  playbackId = token;
-  stopCurrentAudio();
 
   const musicPath = manifest.music?.src || "assets/jingles/jingle.mp3";
   const voicePath = manifest.items?.[key]?.voiceSrc || `assets/jingles/voice/${key}.mp3`;
@@ -129,7 +199,7 @@ function playAudioFile(src, token) {
       return;
     }
 
-    const audio = new Audio(src);
+    const audio = new Audio(audioCache.get(src) || src);
     currentAudio = audio;
     currentAudioReject = reject;
     audio.preload = "auto";
